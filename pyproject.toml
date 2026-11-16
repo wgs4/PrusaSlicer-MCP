@@ -33,4 +33,5 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
     "slicer: requires a real PrusaSlicer 2.9 installation",
+    "real_slicer: requires the real prusa-slicer binary (not a fake)",
 ]

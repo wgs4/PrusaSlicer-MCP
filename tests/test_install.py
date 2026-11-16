@@ -52,7 +52,44 @@ def test_is_supported_version():
     assert not inst.is_supported_version("2.8.1")
 
 
+def test_macos_bundle_resources(tmp_path, monkeypatch):
+    """macOS keeps profiles in Contents/Resources, not next to the binary."""
+    macos = tmp_path / "X.app" / "Contents" / "MacOS"
+    macos.mkdir(parents=True)
+    (macos / "PrusaSlicer").write_bytes(b"")
+    profiles = tmp_path / "X.app" / "Contents" / "Resources" / "profiles"
+    profiles.mkdir(parents=True)
+    monkeypatch.setattr(inst.sys, "platform", "darwin")
+    monkeypatch.setattr(inst, "_read_version", lambda console: "2.9.7")
+    found = inst.find_installation(macos)
+    assert found.console == macos / "PrusaSlicer"
+    assert found.resources == macos.parent / "Resources"
+    assert (found.resources / "profiles").is_dir()
+
+
+def test_lowercase_resources_still_wins(tmp_path, monkeypatch):
+    """A `resources` directory beside the binary stays the one that is used."""
+    d = tmp_path / "PrusaSlicer"
+    d.mkdir()
+    (d / "prusa-slicer").write_bytes(b"")
+    (d / "resources").mkdir()
+    (d.parent / "Resources").mkdir()
+    monkeypatch.setattr(inst.sys, "platform", "linux")
+    monkeypatch.setattr(inst, "_read_version", lambda console: "2.9.7")
+    found = inst.find_installation(d)
+    assert found.resources == d / "resources"
+
+
 @pytest.mark.slicer
 def test_real_install_version(install):
     assert re.match(r"^\d+\.\d+\.\d+", install.version)
     assert install.console.exists()
+
+
+@pytest.mark.real_slicer
+def test_real_install_discovers_bundle_resources(install):
+    bundle = install.console.resolve().parent.parent / "Resources"
+    if not bundle.is_dir():
+        pytest.skip("this install is not a macOS app bundle")
+    assert install.resources == bundle
+    assert (install.resources / "profiles").is_dir()

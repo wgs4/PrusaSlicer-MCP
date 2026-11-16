@@ -80,14 +80,29 @@ def _from_dir(d: Path) -> SlicerInstall | None:
         return None
     gui = d / names["gui"]
     viewer = d / names["gcodeviewer"]
-    resources = d / "resources"
     return SlicerInstall(
         console=console,
         gui=gui if gui.is_file() else None,
         gcodeviewer=viewer if viewer.is_file() else None,
-        resources=resources if resources.is_dir() else None,
+        resources=_resources_dir(d),
         version=_read_version(console),
     )
+
+
+def _resources_dir(d: Path) -> Path | None:
+    """Profiles live in `resources` next to the binary, or in a macOS bundle's `Contents/Resources`.
+
+    A macOS install is `X.app/Contents/MacOS/PrusaSlicer` with profiles at
+    `X.app/Contents/Resources`, one directory up from the binary. The lowercase
+    `resources` directory is what the Windows and Linux layouts use.
+    """
+    resources = d / "resources"
+    if resources.is_dir():
+        return resources
+    bundle = d.parent / "Resources"
+    if bundle.is_dir():
+        return bundle
+    return None
 
 
 def find_installation(override: str | Path | None = None) -> SlicerInstall:
