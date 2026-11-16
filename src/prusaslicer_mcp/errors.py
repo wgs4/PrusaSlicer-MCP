@@ -31,6 +31,8 @@ class VerificationError(PrusaMcpError):
     def __init__(self, message: str, verification=None):
         super().__init__(message)
         self.verification = verification
+        found = getattr(verification, "mismatches", None)
+        self.mismatches = list(found) if found else []
 
 
 class BinaryGcodeError(PrusaMcpError):
