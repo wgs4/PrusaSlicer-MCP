@@ -244,7 +244,11 @@ def build_server(
 
     @mcp.tool()
     async def export_3mf(output_path: str) -> dict:
-        """Export the bed (objects, positions and configuration) as a 3MF project."""
+        """Export the bed as a 3MF project, including the full configuration.
+
+        Metadata/Slic3r_PE.config is written as `; key = value` lines. That is the
+        form PrusaSlicer applies when the project is sliced with no profile arguments.
+        """
         return {"path": await run(eng("export_3mf"), Path(output_path), mutate=True)}
 
     # ------------------------------------------------------------------- analysis
